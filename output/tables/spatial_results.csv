@@ -1,0 +1,2 @@
+Statistic,Value,P-Value,Z-Score,Interpretation
+Moran's I,-0.2,0.025,0.0,Significant Clustering
