@@ -35,7 +35,7 @@ thesis_project/
 
 1. **Run the Analysis**:
    ```bash
-   python src/main.py
+   python src/Data-Driven-Modeling-and-Predictive-Analysis.py
    ```
 2. **Check Results**:
    - Go to the `Thesis_v6_7_ULTIMATE/` directory (created in your current folder or user home).
