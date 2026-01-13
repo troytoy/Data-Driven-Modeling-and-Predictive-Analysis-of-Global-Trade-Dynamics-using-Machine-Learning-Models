@@ -1,10 +1,18 @@
 __pycache__/
 *.pyc
-*.csv
-*.png
 *.log
 .DS_Store
 .idea/
 .vscode/
+
 # Ignore Jupyter Notebooks
 *.ipynb
+
+# Ignore Cache Directories
+data_cache/
+Thesis_DATA_CACHE/
+thesis_v6_7_ultimate/
+
+# Ignore Output output (Local runs)
+output/
+trade_analysis_results/
