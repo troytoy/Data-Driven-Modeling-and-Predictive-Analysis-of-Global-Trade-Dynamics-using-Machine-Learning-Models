@@ -1,53 +1,45 @@
-# Thailand-GCC Trade Analysis Thesis Project
+# Data-Driven Modeling and Predictive Analysis of Global Trade Dynamics
 
-**Version:** 6.7 ULTIMATE (Refactored)
-**Date:** January 13, 2026
+**Version:** 2026.01.13
+**Status:** Active
 
 ## Overview
-This project performs a comprehensive Gravity Model analysis of trade between Thailand and GCC countries (Bahrain, Kuwait, Oman, Qatar, Saudi Arabia, UAE). It integrates data from UN COMTRADE, World Bank WDI, CEPII, and Harvard Atlas to estimate trade potential using PPML and Machine Learning models (Random Forest, XGBoost).
+This project leverages Machine Learning and Econometric models to analyze and predict trade dynamics between Thailand and GCC countries. By integrating multi-source data (UN COMTRADE, World Bank, CEPII), the system provides insights into trade potential and economic determinants.
 
-## Features
-- **Automated Data Collection**: Fetches trade, GDP, and Population data automatically via APIs.
-- **Smart Caching**: Caches API responses to disk to speed up subsequent runs.
-- **Advanced Modeling**: Compares PPML (Econometric) vs. Machine Learning approaches.
-- **Full Reporting**: Generates LaTeX tables, PNG figures, and Markdown summaries automatically.
+## Key Features
+- **Automated Data Pipeline**: Seamless fetching and processing of trade, GDP, and demographic data.
+- **Hybrid Modeling**: Utilizes both traditional Gravity Models (PPML) and advanced ML algorithms (Random Forest, XGBoost).
+- **Interactive Visualization**: Generates insightful charts and summary statistics automatically.
+- **Modular Architecture**: Clean, maintainable code structure ready for scalability.
 
 ## Project Structure
 ```
-thesis_project/
-├── data/                  # Raw input data (if manually placed)
-├── output/                # Generated results (Figures, Tables, Summary)
-├── src/                   # Source code
-│   └── main.py            # Main execution script
-├── requirements.txt       # Python dependencies
-└── README.md              # This file
+├── data/                  # Raw input data storage
+├── output/                # Generated Analysis Results (Figures, Tables)
+├── src/                   # Source Code
+│   ├── Data-Driven-Modeling...py  # Main entry point
+│   ├── config.py          # Configuration settings
+│   ├── models.py          # ML & Statistical models
+│   └── ...                # Utility modules
+├── requirements.txt       # Dependencies
+└── README.md              # Project documentation
 ```
 
-## Installation
+## Getting Started
 
-1. **Clone or Download** this repository.
-2. **Install Dependencies**:
+1. **Install Dependencies**:
    ```bash
    pip install -r requirements.txt
    ```
 
-## Usage
-
-1. **Run the Analysis**:
+2. **Run Analysis**:
    ```bash
    python src/Data-Driven-Modeling-and-Predictive-Analysis.py
    ```
-2. **Check Results**:
-   - Go to the `Thesis_v6_7_ULTIMATE/` directory (created in your current folder or user home).
-   - `summary.json` & `SUMMARY_ENHANCED.md`: Executive summary.
-   - `figures/`: Visualizations of trade flows and model performance.
-   - `tables/`: CSV files of coefficients and metrics.
 
-## Configuration
-Key settings (API Keys, Countries, Years) can be modified in `src/main.py` within the `ThesisConfig` class.
+3. **View Results**:
+   Check the `output/` directory for generated CSV reports and PNG visualizations.
 
-**Note**: For production usage, it is recommended to move API Keys to environment variables.
-
-## Requirements
-- Python 3.8+
-- Internet connection (for initial data fetch)
+## Technologies
+- **Python**: Pandas, NumPy, Scikit-learn, Statsmodels
+- **Data Sources**: UN COMTRADE API, World Bank WDI

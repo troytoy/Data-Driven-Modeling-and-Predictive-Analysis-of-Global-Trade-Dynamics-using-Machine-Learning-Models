@@ -33,7 +33,7 @@ except ImportError:
 try:
     import xgboost as xgb
     XGBOOST_AVAILABLE = True
-except ImportError:
+except Exception:
     XGBOOST_AVAILABLE = False
     logger.warning("xgboost not available.")
 
@@ -84,7 +84,7 @@ def check_and_install_dependencies():
     required_packages = [
         'requests', 'requests-cache', 'pandas', 'numpy', 
         'matplotlib', 'seaborn', 'scipy', 'statsmodels',
-        'scikit-learn', 'xgboost', 'shap', 'openpyxl', 
+        'scikit-learn', 'shap', 'openpyxl', 
         'xlrd', 'wbdata', 'pandas-datareader'
     ]
     

@@ -11,7 +11,7 @@ from pathlib import Path
 try:
     import xgboost as xgb
     XGBOOST_AVAILABLE = True
-except ImportError:
+except Exception:
     XGBOOST_AVAILABLE = False
 
 from utils import logger
