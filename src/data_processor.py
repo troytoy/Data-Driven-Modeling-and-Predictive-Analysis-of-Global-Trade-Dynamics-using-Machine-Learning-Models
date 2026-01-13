@@ -17,6 +17,21 @@ class DataProcessor:
         
         logger.info("[5/11] Integrating Data...")
         
+        # 1. Align Time Periods (Intersection of available years)
+        trade_years = set(trade_df['year'])
+        wdi_years = set(wdi_df['year'])
+        common_years = trade_years.intersection(wdi_years)
+        
+        if not common_years:
+            logger.error("No overlapping years found between Trade and WDI data!")
+            return pd.DataFrame()
+            
+        start_y, end_y = min(common_years), max(common_years)
+        logger.info(f"Aligning data to common period: {start_y}-{end_y}")
+        
+        trade_df = trade_df[trade_df['year'].isin(common_years)]
+        wdi_df = wdi_df[wdi_df['year'].isin(common_years)]
+        
         # Merge Distances
         df = trade_df.merge(
             dist_df.rename(columns={'PartnerISO3': 'importer'}),

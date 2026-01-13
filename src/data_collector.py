@@ -17,8 +17,16 @@ class DataCollector:
         """Fetching UN COMTRADE Data"""
         cache_file = "comtrade_data.csv"
         df = self.cache.load_df(cache_file, max_age_days=7)
-        if df is not None:
-            return df
+        
+        # Smart Cache Check: Ensure cached data covers all requested years
+        if df is not None and not df.empty:
+            cached_years = set(df['year'].unique())
+            required_years = set(self.cfg.years)
+            if required_years.issubset(cached_years):
+                logger.info(f"Cache covers all requested years {sorted(list(required_years))}. Using cache.")
+                return df
+            else:
+                logger.warning(f"Cache missing required years. Cached: {sorted(list(cached_years))}, Needed: {sorted(list(required_years))}. Refetching...")
         
         if not REQUESTS_AVAILABLE:
             logger.error("Requests library missing for Comtrade API")
@@ -87,8 +95,16 @@ class DataCollector:
         """Fetching World Bank WDI Data"""
         cache_file = "wdi_data.csv"
         df = self.cache.load_df(cache_file, max_age_days=90)
-        if df is not None:
-            return df
+        
+        # Smart Cache Check
+        if df is not None and not df.empty:
+            cached_years = set(df['year'].unique())
+            required_years = set(self.cfg.years)
+            if required_years.issubset(cached_years):
+                logger.info("WDI Cache covers all requested years. Using cache.")
+                return df
+            else:
+                logger.warning("WDI Cache incomplete. Refetching...")
 
         if not WBDATA_AVAILABLE:
             logger.error("wbdata missing")
