@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Thesis Version 6.7 ULTIMATE (Refactored) - Thailand-GCC Trade Analysis
+Trade Dynamics Analysis System (Refactored) - Thailand-GCC Trade Analysis
 Refactored for Clean Code, Modularity, and Maintainability.
 
 Original Author: Research Team
@@ -14,7 +14,7 @@ from pathlib import Path
 
 # Local Module Imports
 try:
-    from config import ThesisConfig
+    from config import AnalysisConfig
     from utils import CacheManager, logger, check_and_install_dependencies
     from data_collector import DataCollector
     from data_processor import DataProcessor
@@ -29,14 +29,14 @@ except ImportError as e:
 
 def main():
     print("="*60)
-    print(" THESIS v6.7 ULTIMATE (Refactored) ")
+    print(" Trade Dynamics Analysis System (v2026.01.13) ")
     print("="*60)
 
     # 0. Check Dependencies
     check_and_install_dependencies()
 
     # 1. Setup
-    config = ThesisConfig()
+    config = AnalysisConfig()
     
     # Platform specific path adjustment
     if 'colab' in sys.modules:
@@ -45,7 +45,7 @@ def main():
         config.base_dir = Path("/content/drive/MyDrive")
     else:
         # User Scatch Directory or Current Directory
-        config.base_dir = Path("./thesis_v6_7_ultimate")
+        config.base_dir = Path("./trade_analysis_results")
     
     # Create Directories
     logger.info(f"Setting up output directory: {config.output_dir}")

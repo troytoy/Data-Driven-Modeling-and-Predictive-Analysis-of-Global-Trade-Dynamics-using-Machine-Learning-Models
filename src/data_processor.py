@@ -2,11 +2,11 @@ import pandas as pd
 import numpy as np
 from typing import Dict, Tuple
 
-from config import ThesisConfig
+from config import AnalysisConfig
 from utils import logger
 
 class DataProcessor:
-    def __init__(self, config: ThesisConfig):
+    def __init__(self, config: AnalysisConfig):
         self.cfg = config
 
     def integrate(self, 

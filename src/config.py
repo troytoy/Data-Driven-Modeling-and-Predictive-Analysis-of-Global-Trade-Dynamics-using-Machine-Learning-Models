@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import List, Dict
 
 @dataclass
-class ThesisConfig:
+class AnalysisConfig:
     # API Keys
     comtrade_key: str = "5d86bad9fa714c979dc95c0ea2ec9ba8"
     wto_key: str = "68946a81b94841b19279c7800d52b213"
@@ -29,16 +29,19 @@ class ThesisConfig:
         'QAT': 'QA', 'SAU': 'SA', 'ARE': 'AE'
     })
 
-    # Output Paths
-    base_dir: Path = field(default_factory=Path.cwd)
+    # Paths
+    base_dir: Path = field(default_factory=lambda: Path("./trade_analysis_results"))
     
     @property
     def output_dir(self) -> Path:
-        return self.base_dir / "Thesis_v6_7_ULTIMATE"
-
+        return self.base_dir / "output"
+    
     @property
     def cache_dir(self) -> Path:
-        return self.base_dir / "Thesis_DATA_CACHE"
+        # Changed from Thesis_DATA_CACHE
+        d = self.base_dir / "data_cache"
+        d.mkdir(parents=True, exist_ok=True)
+        return d
 
     # Verified Fallbacks (Static Data)
     pci_fallback: Dict[str, float] = field(default_factory=lambda: {

@@ -5,11 +5,11 @@ import numpy as np
 from typing import Dict, List, Optional
 import wbdata
 
-from config import ThesisConfig
+from config import AnalysisConfig
 from utils import CacheManager, logger, REQUESTS_AVAILABLE, WBDATA_AVAILABLE
 
 class DataCollector:
-    def __init__(self, config: ThesisConfig, cache: CacheManager):
+    def __init__(self, config: AnalysisConfig, cache: CacheManager):
         self.cfg = config
         self.cache = cache
 

@@ -2,10 +2,10 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 from utils import logger
-from config import ThesisConfig
+from config import AnalysisConfig
 
 class GTAPPreparator:
-    def __init__(self, config: ThesisConfig):
+    def __init__(self, config: AnalysisConfig):
         self.cfg = config
         self.output_dir = config.output_dir
 
