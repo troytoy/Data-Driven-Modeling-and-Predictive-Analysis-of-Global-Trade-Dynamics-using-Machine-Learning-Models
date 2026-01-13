@@ -85,7 +85,8 @@ def check_and_install_dependencies():
         'requests', 'requests-cache', 'pandas', 'numpy', 
         'matplotlib', 'seaborn', 'scipy', 'statsmodels',
         'scikit-learn', 'shap', 'openpyxl', 
-        'xlrd', 'wbdata', 'pandas-datareader'
+        'xlrd', 'wbdata', 'pandas-datareader',
+        'geopandas', 'esda', 'libpysal', 'comtradeapicall'
     ]
     
     missing = []

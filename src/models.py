@@ -77,6 +77,22 @@ class ModelEngine:
             xgb_mod = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42)
             xgb_mod.fit(X_train, y_train)
             self._evaluate(xgb_mod, X_test, y_test, 'XGBoost')
+            self._run_shap(xgb_mod, X_test, features)
+
+    def _run_shap(self, model, X, feature_names):
+        try:
+            import shap
+            import matplotlib.pyplot as plt
+            logger.info("Running SHAP Explainer...")
+            explainer = shap.Explainer(model)
+            shap_values = explainer(X)
+            
+            plt.figure(figsize=(10, 8))
+            shap.summary_plot(shap_values, X, show=False, feature_names=feature_names)
+            plt.savefig(self.output_dir / 'figures' / 'shap_analysis.png', bbox_inches='tight')
+            plt.close()
+        except Exception as e:
+            logger.warning(f"SHAP Analysis failed: {e}")
             
     def _evaluate(self, model, X, y_true, name):
         pred = model.predict(X)

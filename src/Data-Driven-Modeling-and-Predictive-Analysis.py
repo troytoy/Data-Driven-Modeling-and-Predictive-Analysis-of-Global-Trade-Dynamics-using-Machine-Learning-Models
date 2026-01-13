@@ -78,9 +78,25 @@ def main():
     engine.run_ml_models(train_df, test_df)
     engine.save_comparison()
     
-    # 5. Visuals
+    # 5. Spatial Analysis
+    # Note: Using try-except to prevent crash if spatial libs missing
+    try:
+        from spatial_analysis import SpatialAnalyzer
+        spatial = SpatialAnalyzer(config.output_dir)
+        spatial.run_moran_test(full_df)
+    except ImportError:
+        logger.warning("Spatial module skipped.")
+
+    # 6. GTAP Prep
+    from gtap_prep import GTAPPreparator
+    gtap = GTAPPreparator(config)
+    gtap.run_simulation_prep(full_df)
+
+    # 7. Visuals
     viz = Visualizer(config.output_dir)
     viz.plot_trade_overview(full_df)
+    viz.plot_trade_over_time(full_df)
+    viz.plot_distance_vs_trade(full_df)
     
     print("\nWorkflow Complete! Check:", config.output_dir)
 
