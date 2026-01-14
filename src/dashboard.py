@@ -13,7 +13,9 @@ st.set_page_config(
 )
 
 # Constants
-OUTPUT_DIR = Path("output")
+# Make output dir relative to this script file to ensure it works on Streamlit Cloud
+BASE_DIR = Path(__file__).parent.parent
+OUTPUT_DIR = BASE_DIR / "output"
 DATA_FILE = OUTPUT_DIR / "integrated_dataset.csv"
 GTAP_FILE = OUTPUT_DIR / "tables" / "gtap_shock_template.csv"
 SPATIAL_FILE = OUTPUT_DIR / "tables" / "spatial_results.csv"
@@ -117,10 +119,6 @@ if df is not None:
 
         # Map Visualization (Proxy using Scatter Geo)
         st.markdown("### 🗺️ Trade Map")
-        # We need coords, usually in df or we map them manually. 
-        # Assuming the generated integrated_dataset doesn't have lat/lon columns unless we kept them.
-        # Let's check columns quickly.
-        # If not, we can use simple country codes.
         
         map_df = filtered_df.groupby('importer').agg({'trade_value': 'sum'}).reset_index()
         fig_map = px.choropleth(map_df, locations="importer", locationmode="ISO-3",
@@ -143,21 +141,10 @@ if df is not None:
             
         with col_sim2:
             if gtap_df is not None:
-                # Dynamic Calculation
-                # Re-calculate shocks based on sliders
-                sim_data = gtap_df.copy()
-                
-                # Formula: Shock = - (Cut/100) * Baseline
-                # Note: 'AVE_Baseline_Pct' is in percent, e.g. 15.0
-                
-                sim_data['New_Tariff_Shock'] = - (tariff_cut / 100) * (sim_data['AVE_Baseline_Pct'] / 100)
-                # Assuming NTM part is implicit or we use the pre-calced NTM equivalent column if available. 
-                # For simplified demo, we scale the 'Shock_Full_Facilitation_Pct' roughly or just show the static template.
-                # Let's mostly visualize the STATIC template since we don't have all raw params here easily.
-                
                 st.info("Visualizing Pre-calculated Scenarios from GTAP Preparation Module")
                 
-                chart_data = sim_data.melt(id_vars=['importer'], 
+                # Use correct columns from CSV: shock_tariff_cut, shock_ntm, Shock_Full_Facilitation_Pct
+                chart_data = gtap_df.melt(id_vars=['importer'], 
                                            value_vars=['shock_tariff_cut', 'shock_ntm', 'Shock_Full_Facilitation_Pct'],
                                            var_name='Scenario', value_name='Shock_Pct')
                 
@@ -165,7 +152,7 @@ if df is not None:
                                  title="AVE Shocks by Scenario (Lower is higher cost reduction)")
                 st.plotly_chart(fig_sim, use_container_width=True)
                 
-                st.dataframe(sim_data.head(10))
+                st.dataframe(gtap_df.head(10))
             else:
                 st.warning("GTAP Template not found.")
 
@@ -174,12 +161,22 @@ if df is not None:
         st.subheader("Model Performance & Explainability")
         
         col_m1, col_m2 = st.columns(2)
+        
+        img_model = OUTPUT_DIR / "figures/model_comparison.png"
+        img_shap = OUTPUT_DIR / "figures/shap_analysis.png"
+        
         with col_m1:
-            st.image(str(OUTPUT_DIR / "figures/model_comparison.png"), caption="Model Comparison", use_column_width=True)
+            if img_model.exists():
+                st.image(str(img_model), caption="Model Comparison", use_column_width=True)
+            else:
+                st.warning(f"Image not found: {img_model.name}")
             
         with col_m2:
-            st.image(str(OUTPUT_DIR / "figures/shap_analysis.png"), caption="SHAP Feature Importance", use_column_width=True)
-        
+            if img_shap.exists():
+                st.image(str(img_shap), caption="SHAP Feature Importance", use_column_width=True)
+            else:
+                st.warning(f"Image not found: {img_shap.name}")
+
         st.markdown("---")
         st.markdown("**Interpretation:**")
         st.markdown("- **SHAP Analysis**: Shows which variables most strongly influence trade predictions. Red dots = high feature value.")
