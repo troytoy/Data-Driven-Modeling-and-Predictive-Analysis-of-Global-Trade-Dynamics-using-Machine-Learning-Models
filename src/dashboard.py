@@ -85,7 +85,7 @@ if df is not None:
         # Scatter Distance vs Trade
         st.markdown("### 📏 Gravity Model: Distance vs Trade")
         fig_grav = px.scatter(filtered_df, x='distance', y='trade_value', color='importer', 
-                              size='gdp_importer', log_x=True, log_y=True,
+                              size='gdp_im', log_x=True, log_y=True,
                               hover_data=['year', 'hs6'], title="Distance vs Trade Value (Log-Log Scale)")
         st.plotly_chart(fig_grav, use_container_width=True)
 
