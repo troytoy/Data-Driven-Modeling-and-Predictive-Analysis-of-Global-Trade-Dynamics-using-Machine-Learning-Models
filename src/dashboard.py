@@ -157,11 +157,11 @@ if df is not None:
                 
                 st.info("Visualizing Pre-calculated Scenarios from GTAP Preparation Module")
                 
-                chart_data = sim_data.melt(id_vars=['Importer'], 
-                                           value_vars=['Shock_Tariff_Reduction_50pct', 'Shock_NTM_Harmonization', 'Shock_Full_Facilitation_Pct'],
+                chart_data = sim_data.melt(id_vars=['importer'], 
+                                           value_vars=['shock_tariff_cut', 'shock_ntm', 'Shock_Full_Facilitation_Pct'],
                                            var_name='Scenario', value_name='Shock_Pct')
                 
-                fig_sim = px.bar(chart_data, x='Importer', y='Shock_Pct', color='Scenario', barmode='group',
+                fig_sim = px.bar(chart_data, x='importer', y='Shock_Pct', color='Scenario', barmode='group',
                                  title="AVE Shocks by Scenario (Lower is higher cost reduction)")
                 st.plotly_chart(fig_sim, use_container_width=True)
                 
