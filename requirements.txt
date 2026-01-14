@@ -12,3 +12,5 @@ shap>=0.41.0
 openpyxl>=3.0.0
 xlrd>=2.0.0
 wbdata>=0.3.0
+streamlit
+plotly

@@ -38,7 +38,13 @@ This project leverages Machine Learning and Econometric models to analyze and pr
    python src/Data-Driven-Modeling-and-Predictive-Analysis.py
    ```
 
-3. **View Results**:
+3. **Launch Dashboard** (New!):
+   Explore the results interactively:
+   ```bash
+   streamlit run src/dashboard.py
+   ```
+
+4. **View Results**:
    Check the `output/` directory for generated CSV reports and PNG visualizations.
 
 ## Technologies
