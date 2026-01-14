@@ -11,7 +11,7 @@ class AnalysisConfig:
     # Study Parameters
     exporter: str = "THA"
     importers: List[str] = field(default_factory=lambda: ["BHR", "KWT", "OMN", "QAT", "SAU", "ARE"])
-    years: List[int] = field(default_factory=lambda: list(range(2018, 2025)))
+    years: List[int] = field(default_factory=lambda: list(range(2018, 2023)))
     hs6_products: List[str] = field(default_factory=lambda: [
         "020714", "160100", "160232", "040210", 
         "190531", "200599", "210390", "210690"

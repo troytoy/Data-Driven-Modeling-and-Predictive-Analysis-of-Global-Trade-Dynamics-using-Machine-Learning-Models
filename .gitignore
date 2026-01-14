@@ -13,6 +13,11 @@ data_cache/
 Thesis_DATA_CACHE/
 thesis_v6_7_ultimate/
 
-# Ignore Output output (Local runs)
-output/
+# Ignore Output output (Local runs) - BUT ALLOW specific files for Dashboard
+output/*
+!output/tables/
+!output/figures/
+!output/tables/*.csv
+!output/figures/*.png
+!output/integrated_dataset.csv
 trade_analysis_results/
