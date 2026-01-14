@@ -47,6 +47,10 @@ if df is not None:
     countries = sorted(df['importer'].unique())
     selected_countries = st.sidebar.multiselect("Select Importers", countries, default=countries)
 
+    if st.sidebar.button("🔄 Clear Cache & Reload"):
+        st.cache_data.clear()
+        st.rerun()
+
     # Filter Data
     mask = (df['year'].between(selected_year[0], selected_year[1])) & (df['importer'].isin(selected_countries))
     filtered_df = df[mask]
@@ -84,8 +88,14 @@ if df is not None:
             
         # Scatter Distance vs Trade
         st.markdown("### 📏 Gravity Model: Distance vs Trade")
+        
+        # Robust Bubble Size Check
+        size_col = 'gdp_im' if 'gdp_im' in filtered_df.columns else None
+        if size_col is None:
+            st.warning("⚠️ 'gdp_im' column missing. Bubble size disabled.")
+            
         fig_grav = px.scatter(filtered_df, x='distance', y='trade_value', color='importer', 
-                              size='gdp_im', log_x=True, log_y=True,
+                              size=size_col, log_x=True, log_y=True,
                               hover_data=['year', 'hs6'], title="Distance vs Trade Value (Log-Log Scale)")
         st.plotly_chart(fig_grav, use_container_width=True)
 
