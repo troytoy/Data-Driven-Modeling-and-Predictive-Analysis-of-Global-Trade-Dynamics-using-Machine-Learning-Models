@@ -139,4 +139,27 @@ class ModelEngine:
     def save_comparison(self):
         df = pd.DataFrame(self.results).sort_values('R2', ascending=False)
         df.to_csv(self.output_dir / 'tables' / 'model_comparison.csv', index=False)
+        
+        # --- Create Visual Comparison Plot ---
+        try:
+            import matplotlib.pyplot as plt
+            import seaborn as sns
+            
+            # Melt for bar plot
+            # Normalize RMSE/MAE for visualization if needed, or just plot raw
+            # For this plot, we'll plot raw values side-by-side
+            plot_df = df.melt(id_vars='Model', var_name='Metric', value_name='Score')
+            
+            plt.figure(figsize=(10, 6))
+            sns.barplot(data=plot_df, x='Model', y='Score', hue='Metric', palette='viridis')
+            plt.title("Model Performance Comparison")
+            plt.ylabel("Score")
+            plt.xticks(rotation=45)
+            plt.tight_layout()
+            plt.savefig(self.output_dir / 'figures' / 'model_comparison.png')
+            plt.close()
+            logger.info("Model comparison plot saved.")
+        except Exception as e:
+            logger.error(f"Failed to plot model comparison: {e}")
+            
         logger.info("Model comparison saved.")
