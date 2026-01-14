@@ -20,6 +20,7 @@ class ModelEngine:
     def __init__(self, output_dir: Path):
         self.output_dir = output_dir
         self.results = []
+        self.models = {}
 
     def run_ppml(self, train_df: pd.DataFrame, test_df: pd.DataFrame):
         logger.info("[6/11] Running PPML Estimation...")
@@ -62,37 +63,67 @@ class ModelEngine:
         X_train, y_train = train_df[features], train_df['trade_value']
         X_test, y_test = test_df[features], test_df['trade_value']
         
+        # Scaling
         scaler = StandardScaler()
-        # Scale only features
         X_train = scaler.fit_transform(X_train)
         X_test = scaler.transform(X_test)
         
-        # RandomForest
+        # --- RandomForest ---
         rf = RandomForestRegressor(n_estimators=100, max_depth=10, random_state=42)
         rf.fit(X_train, y_train)
-        self._evaluate(rf, X_test, y_test, 'Random Forest')
+        self._evaluate(rf, X_test, y_test, 'Random_Forest')
+        self.models['Random_Forest'] = rf  # Store for SHAP
         
-        # XGBoost
+        # --- XGBoost ---
         if XGBOOST_AVAILABLE:
-            xgb_mod = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42)
-            xgb_mod.fit(X_train, y_train)
-            self._evaluate(xgb_mod, X_test, y_test, 'XGBoost')
-            self._run_shap(xgb_mod, X_test, features)
+            try:
+                xgb_mod = xgb.XGBRegressor(n_estimators=100, learning_rate=0.1, max_depth=5, random_state=42)
+                xgb_mod.fit(X_train, y_train)
+                self._evaluate(xgb_mod, X_test, y_test, 'XGBoost')
+                self.models['XGBoost'] = xgb_mod  # Store for SHAP
+            except Exception as e:
+                logger.error(f"XGBoost training failed: {e}")
+        
+        # --- SHAP Analysis ---
+        self._run_shap(X_test, features)
 
-    def _run_shap(self, model, X, feature_names):
+    def _run_shap(self, X_test, feature_names):
         try:
             import shap
             import matplotlib.pyplot as plt
-            logger.info("Running SHAP Explainer...")
-            explainer = shap.Explainer(model)
-            shap_values = explainer(X)
+            logger.info("Generating SHAP plots...")
             
-            plt.figure(figsize=(10, 8))
-            shap.summary_plot(shap_values, X, show=False, feature_names=feature_names)
-            plt.savefig(self.output_dir / 'figures' / 'shap_analysis.png', bbox_inches='tight')
-            plt.close()
+            # Use XGBoost if available, otherwise fallback to Random Forest
+            model_to_explain = self.models.get('XGBoost')
+            model_name = 'XGBoost'
+            
+            if model_to_explain is None:
+                logger.warning("XGBoost not available for SHAP. Falling back to Random Forest...")
+                model_to_explain = self.models.get('Random_Forest')
+                model_name = 'Random Forest'
+            
+            if model_to_explain:
+                # TreeExplainer works for both
+                explainer = shap.TreeExplainer(model_to_explain)
+                
+                # Handling different model input types (some wrapped by sklearn API)
+                try:
+                    shap_values = explainer.shap_values(X_test)
+                except:
+                    shap_values = explainer(X_test).values
+
+                plt.figure(figsize=(10, 6))
+                shap.summary_plot(shap_values, X_test, show=False, feature_names=feature_names)
+                plt.title(f"SHAP Feature Importance ({model_name})")
+                plt.tight_layout()
+                plt.savefig(self.output_dir / "figures/shap_analysis.png")
+                plt.close()
+                logger.info("SHAP analysis saved successfully.")
+            else:
+                logger.error("No suitable tree-based model found for SHAP.")
+                
         except Exception as e:
-            logger.warning(f"SHAP Analysis failed: {e}")
+            logger.error(f"Failed to generate SHAP plots: {str(e)}")
             
     def _evaluate(self, model, X, y_true, name):
         pred = model.predict(X)
