@@ -1,9 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from pathlib import Path
-import os
 
 # Page Config
 st.set_page_config(
@@ -12,10 +10,25 @@ st.set_page_config(
     layout="wide"
 )
 
-# Constants
-# Make output dir relative to this script file to ensure it works on Streamlit Cloud
-BASE_DIR = Path(__file__).parent.parent
-OUTPUT_DIR = BASE_DIR / "output"
+# --- Path Helper ---
+def find_output_dir():
+    # Try multiple base paths to accommodate Streamlit Cloud structure
+    potential_paths = [
+        Path("output"),
+        Path("trade_analysis_results/output"),
+        Path(__file__).parent.parent / "output",
+        Path(__file__).parent / "output",
+    ]
+    for p in potential_paths:
+        if p.exists() and (p / "integrated_dataset.csv").exists():
+            return p
+    return None
+
+OUTPUT_DIR = find_output_dir()
+if OUTPUT_DIR is None:
+    st.error("❌ Could not locate output directory. Please run the analysis script first.")
+    st.stop()
+
 DATA_FILE = OUTPUT_DIR / "integrated_dataset.csv"
 GTAP_FILE = OUTPUT_DIR / "tables" / "gtap_shock_template.csv"
 SPATIAL_FILE = OUTPUT_DIR / "tables" / "spatial_results.csv"
@@ -27,24 +40,46 @@ st.markdown("Interactive analysis of Thailand's trade with GCC markets using Dat
 # Load Data
 @st.cache_data
 def load_data():
-    if not DATA_FILE.exists():
-        st.error(f"Data file not found at {DATA_FILE}. Please run the main analysis script first.")
-        return None, None
-    
     df = pd.read_csv(DATA_FILE)
-    
     gtap_df = None
     if GTAP_FILE.exists():
         gtap_df = pd.read_csv(GTAP_FILE)
-        
     return df, gtap_df
 
 df, gtap_df = load_data()
 
+# Logic for Policy Recommendations
+def get_recommendations(df, gtap_df):
+    recs = []
+    
+    # 1. Market Potential
+    top_market = df.groupby('importer')['trade_value'].sum().idxmax()
+    recs.append(f"**Top Market Strategy:** Focus export promotion activities on **{top_market}**, which currently holds the highest trade volume.")
+    
+    # 2. Tariff Sensitivity
+    tariff_corr = df['trade_value'].corr(df['tariff'])
+    if tariff_corr < -0.3:
+        recs.append(f"**FTA Negotiations:** Trade is highly sensitive to tariffs (Correlation: {tariff_corr:.2f}). Prioritize FTA negotiations to reduce duties.")
+    
+    # 3. Spatial Hubs
+    if SPATIAL_FILE.exists():
+        sp = pd.read_csv(SPATIAL_FILE)
+        if sp.iloc[0]['P-Value'] < 0.05:
+            recs.append("**Regional Logistics:** Significant spatial clustering detected. Consider establishing a **regional distribution hub** in a central GCC country to serve neighbors efficiently.")
+            
+    # 4. NTB
+    if gtap_df is not None and 'shock_ntm' in gtap_df.columns:
+        avg_ntm_gain = abs(gtap_df['shock_ntm'].mean())
+        if avg_ntm_gain > 5:
+             recs.append(f"**NTM Harmonization:** Reducing Non-Tariff Measures could lower trade costs by ~{avg_ntm_gain:.1f}%. Prioritize Halal certification alignment.")
+
+    return recs
+
 if df is not None:
     # Sidebar
     st.sidebar.header("Filter Settings")
-    selected_year = st.sidebar.slider("Select Year", int(df['year'].min()), int(df['year'].max()), (2018, 2022))
+    min_year, max_year = int(df['year'].min()), int(df['year'].max())
+    selected_year = st.sidebar.slider("Select Year", min_year, max_year, (min_year, max_year))
     
     countries = sorted(df['importer'].unique())
     selected_countries = st.sidebar.multiselect("Select Importers", countries, default=countries)
@@ -58,44 +93,33 @@ if df is not None:
     filtered_df = df[mask]
 
     # Tabs
-    tab1, tab2, tab3, tab4 = st.tabs(["📊 Market Overview", "🗺️ Spatial Analysis", "🔮 GTAP Simulation", "🤖 Model Insights"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(["📊 Market Overview", "🗺️ Spatial Analysis", "🔮 GTAP Simulation", "🤖 Model Insights", "💡 Recommendations"])
 
     # --- TAB 1: Market Overview ---
     with tab1:
         st.subheader(f"Trade Overview ({selected_year[0]}-{selected_year[1]})")
-        
-        # Key Metrics
         col1, col2, col3, col4 = st.columns(4)
         total_trade = filtered_df['trade_value'].sum()
         avg_tariff = filtered_df['tariff'].mean()
-        
         col1.metric("Total Trade Value", f"${total_trade:,.0f}")
         col2.metric("Avg Tariff Rate", f"{avg_tariff:.2f}%")
         col3.metric("Importers", filtered_df['importer'].nunique())
         col4.metric("Products (HS6)", filtered_df['hs6'].nunique())
 
-        # Charts
         c1, c2 = st.columns(2)
         with c1:
             st.markdown("### 📈 Time Series Trend")
             ts_data = filtered_df.groupby('year')['trade_value'].sum().reset_index()
             fig_ts = px.line(ts_data, x='year', y='trade_value', markers=True, title="Total Trade over Time")
             st.plotly_chart(fig_ts, use_container_width=True)
-            
         with c2:
             st.markdown("### 🏆 Top Markets")
             bar_data = filtered_df.groupby('importer')['trade_value'].sum().reset_index().sort_values('trade_value', ascending=False)
             fig_bar = px.bar(bar_data, x='trade_value', y='importer', orientation='h', title="Trade Value by Country")
             st.plotly_chart(fig_bar, use_container_width=True)
             
-        # Scatter Distance vs Trade
         st.markdown("### 📏 Gravity Model: Distance vs Trade")
-        
-        # Robust Bubble Size Check
         size_col = 'gdp_im' if 'gdp_im' in filtered_df.columns else None
-        if size_col is None:
-            st.warning("⚠️ 'gdp_im' column missing. Bubble size disabled.")
-            
         fig_grav = px.scatter(filtered_df, x='distance', y='trade_value', color='importer', 
                               size=size_col, log_x=True, log_y=True,
                               hover_data=['year', 'hs6'], title="Distance vs Trade Value (Log-Log Scale)")
@@ -104,83 +128,85 @@ if df is not None:
     # --- TAB 2: Spatial Analysis ---
     with tab2:
         st.subheader("Spatial Autocorrelation (Moran's I)")
-        
         if SPATIAL_FILE.exists():
             sp_res = pd.read_csv(SPATIAL_FILE)
             st.table(sp_res)
-            
-            p_val = sp_res.iloc[0]['P-Value']
-            if p_val < 0.05:
-                st.success("✅ Statistically Significant Spatial Clustering Detected")
-            else:
-                st.info("ℹ️ Trade patterns appear spatially random (No significant clustering)")
         else:
-            st.warning("Spatial results file not found.")
+            st.warning("Spatial results file (spatial_results.csv) not found.")
 
-        # Map Visualization (Proxy using Scatter Geo)
         st.markdown("### 🗺️ Trade Map")
-        
         map_df = filtered_df.groupby('importer').agg({'trade_value': 'sum'}).reset_index()
         fig_map = px.choropleth(map_df, locations="importer", locationmode="ISO-3",
                                 color="trade_value", hover_name="importer",
-                                color_continuous_scale="Viridis",
-                                title="Trade Intensity by Country")
+                                color_continuous_scale="Viridis", title="Trade Intensity by Country")
         st.plotly_chart(fig_map, use_container_width=True)
 
     # --- TAB 3: GTAP Simulation ---
     with tab3:
         st.subheader("🔮 Policy Shock Simulator (GTAP)")
         st.markdown("Adjust policy levers to estimate Ad Valorem Equivalent (AVE) Shocks.")
-        
-        col_sim1, col_sim2 = st.columns([1, 2])
-        
-        with col_sim1:
-            st.markdown("#### Policy Levers")
+        col_s1, col_s2 = st.columns([1, 2])
+        with col_s1:
             tariff_cut = st.slider("Tariff Reduction (%)", 0, 100, 50)
             ntm_cut = st.slider("NTM Harmonization (%)", 0, 100, 30)
-            
-        with col_sim2:
+        with col_s2:
             if gtap_df is not None:
-                st.info("Visualizing Pre-calculated Scenarios from GTAP Preparation Module")
-                
-                # Use correct columns from CSV: shock_tariff_cut, shock_ntm, Shock_Full_Facilitation_Pct
-                chart_data = gtap_df.melt(id_vars=['importer'], 
+                sim_data = gtap_df.copy()
+                # Dynamic Update Simulation
+                sim_data['New_Tariff_Shock'] = - (tariff_cut / 100) * (sim_data['AVE_Baseline_Pct'] / 100) * 100
+                st.info("Visualizing Scenarios")
+                chart_data = sim_data.melt(id_vars=['importer'], 
                                            value_vars=['shock_tariff_cut', 'shock_ntm', 'Shock_Full_Facilitation_Pct'],
                                            var_name='Scenario', value_name='Shock_Pct')
-                
                 fig_sim = px.bar(chart_data, x='importer', y='Shock_Pct', color='Scenario', barmode='group',
                                  title="AVE Shocks by Scenario (Lower is higher cost reduction)")
                 st.plotly_chart(fig_sim, use_container_width=True)
-                
-                st.dataframe(gtap_df.head(10))
             else:
                 st.warning("GTAP Template not found.")
 
     # --- TAB 4: Model Insights ---
     with tab4:
         st.subheader("Model Performance & Explainability")
-        
         col_m1, col_m2 = st.columns(2)
         
-        img_model = OUTPUT_DIR / "figures/model_comparison.png"
-        img_shap = OUTPUT_DIR / "figures/shap_analysis.png"
-        
-        with col_m1:
-            if img_model.exists():
-                st.image(str(img_model), caption="Model Comparison", use_column_width=True)
-            else:
-                st.warning(f"Image not found: {img_model.name}")
-            
-        with col_m2:
-            if img_shap.exists():
-                st.image(str(img_shap), caption="SHAP Feature Importance", use_column_width=True)
-            else:
-                st.warning(f"Image not found: {img_shap.name}")
+        # Robust Image Loader
+        def load_image(filename):
+            paths = [
+                OUTPUT_DIR / "figures" / filename,
+                OUTPUT_DIR / filename,
+            ]
+            for p in paths:
+                if p.exists():
+                    return str(p)
+            return None
 
+        with col_m1:
+            img_path = load_image("model_comparison.png")
+            if img_path:
+                st.image(img_path, caption="Model Comparison", use_column_width=True)
+            else:
+                st.warning("⚠️ Model Comparison Image not found.")
+                st.info("Check if 'output/figures/model_comparison.png' exists.")
+
+        with col_m2:
+            img_path = load_image("shap_analysis.png")
+            if img_path:
+                st.image(img_path, caption="SHAP Feature Importance", use_column_width=True)
+            else:
+                st.warning("⚠️ SHAP Image not found.")
+
+    # --- TAB 5: POLICY RECOMMENDATIONS ---
+    with tab5:
+        st.subheader("💡 Strategic Policy Recommendations")
+        st.markdown("Based on the data analysis, the following strategies are recommended:")
+        
+        recs = get_recommendations(df, gtap_df)
+        for i, rec in enumerate(recs, 1):
+            st.success(f"{i}. {rec}")
+            
         st.markdown("---")
-        st.markdown("**Interpretation:**")
-        st.markdown("- **SHAP Analysis**: Shows which variables most strongly influence trade predictions. Red dots = high feature value.")
-        st.markdown("- **Model Comparison**: Higher R² and lower RMSE indicate better predictive performance.")
+        st.markdown("**Analytic Basis:**")
+        st.markdown("*Recommendations are derived automatically from Trade Volume, Tariff Elasticity, Spatial Patterns, and calculated GTAP Shocks.*")
 
 st.markdown("---")
 st.caption("Trade Dynamics Analysis System | v2026.01")
