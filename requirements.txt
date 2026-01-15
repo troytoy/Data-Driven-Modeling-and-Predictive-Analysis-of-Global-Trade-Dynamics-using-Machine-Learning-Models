@@ -12,3 +12,4 @@ geopandas
 libpysal
 esda
 streamlit
+plotly>=5.0.0
