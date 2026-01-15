@@ -181,11 +181,91 @@ if df is not None:
         else:
             st.warning("Spatial results file (spatial_results.csv) not found.")
 
-        st.markdown("### 🗺️ Trade Map")
-        map_df = filtered_df.groupby('importer').agg({'trade_value': 'sum'}).reset_index()
-        fig_map = px.choropleth(map_df, locations="importer", locationmode="ISO-3",
-                                color="trade_value", hover_name="importer",
-                                color_continuous_scale="Viridis", title="Trade Intensity by Country")
+        st.markdown("### 🗺️ Global Trade Connectivity (3D)")
+        
+        import plotly.graph_objects as go
+
+        # Coordinates for plotting arcs (Hardcoded for stability)
+        coords = {
+            'THA': {'lat': 15.87, 'lon': 100.99, 'name': 'Thailand'},
+            'SAU': {'lat': 23.88, 'lon': 45.07, 'name': 'Saudi Arabia'},
+            'ARE': {'lat': 23.42, 'lon': 53.84, 'name': 'UAE'},
+            'QAT': {'lat': 25.35, 'lon': 51.18, 'name': 'Qatar'},
+            'KWT': {'lat': 29.31, 'lon': 47.48, 'name': 'Kuwait'},
+            'OMN': {'lat': 21.47, 'lon': 55.97, 'name': 'Oman'},
+            'BHR': {'lat': 26.06, 'lon': 50.55, 'name': 'Bahrain'}
+        }
+
+        # Aggregate trade by importer
+        map_df = filtered_df.groupby('importer')['trade_value'].sum().reset_index()
+        
+        # Base Globe
+        fig_map = go.Figure()
+
+        # Add Countries (Background)
+        fig_map.add_trace(go.Choropleth(
+            locations=map_df['importer'],
+            z=map_df['trade_value'],
+            locationmode='ISO-3',
+            colorscale='Viridis',
+            marker_line_color='white',
+            marker_line_width=0.5,
+            showscale=True,
+            colorbar_title="Trade Volume"
+        ))
+
+        # Add Arcs (Flows from THA to Importers)
+        tha_lat = coords['THA']['lat']
+        tha_lon = coords['THA']['lon']
+
+        for idx, row in map_df.iterrows():
+            imp_code = row['importer']
+            if imp_code in coords:
+                imp_lat = coords[imp_code]['lat']
+                imp_lon = coords[imp_code]['lon']
+                val = row['trade_value']
+                
+                # Add Line
+                fig_map.add_trace(go.Scattergeo(
+                    locationmode = 'ISO-3',
+                    lon = [tha_lon, imp_lon],
+                    lat = [tha_lat, imp_lat],
+                    mode = 'lines',
+                    line = dict(width=2, color='cyan'),
+                    opacity = 0.8,
+                    hoverinfo='none'
+                ))
+                
+                # Add Marker at Destination
+                fig_map.add_trace(go.Scattergeo(
+                    locationmode = 'ISO-3',
+                    lon = [imp_lon],
+                    lat = [imp_lat],
+                    mode = 'markers',
+                    marker = dict(size=8, color='orange', line=dict(width=1, color='white')),
+                    text = f"{imp_code}: ${val/1e6:.1f}M",
+                    hoverinfo='text'
+                ))
+
+        # Update Layout to be a 3D Globe
+        fig_map.update_layout(
+            title_text = 'Thailand (THA) to GCC Trade Flows',
+            showlegend = False,
+            geo = dict(
+                projection_type = "orthographic",
+                showland = True,
+                landcolor = "rgb(20, 20, 20)",
+                showocean = True,
+                oceancolor = "rgb(10, 20, 40)",
+                showcountries = True,
+                countrycolor = "rgb(100, 100, 100)",
+                coastlinecolor = "rgb(100, 100, 100)",
+                bgcolor= 'rgba(0,0,0,0)'
+            ),
+            margin={"r":0,"t":30,"l":0,"b":0},
+            height=600
+        )
+        
         st.plotly_chart(fig_map, use_container_width=True)
 
     # --- TAB 3: GTAP Simulation ---
