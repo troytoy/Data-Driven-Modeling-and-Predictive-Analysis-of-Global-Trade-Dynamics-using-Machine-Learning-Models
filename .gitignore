@@ -21,3 +21,4 @@ output/*
 !output/figures/*.png
 !output/integrated_dataset.csv
 trade_analysis_results/
+UE-Thesis-Template/
