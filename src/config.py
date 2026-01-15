@@ -1,12 +1,14 @@
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import List, Dict
 
 @dataclass
 class AnalysisConfig:
-    # API Keys
-    comtrade_key: str = "5d86bad9fa714c979dc95c0ea2ec9ba8"
-    wto_key: str = "68946a81b94841b19279c7800d52b213"
+    # API Keys - SECURED: Reading from Environment Variables
+    # keys removed from source code
+    comtrade_key: str = field(default_factory=lambda: os.getenv("COMTRADE_KEY", ""))
+    wto_key: str = field(default_factory=lambda: os.getenv("WTO_KEY", ""))
 
     # Study Parameters
     exporter: str = "THA"
