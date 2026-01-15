@@ -55,9 +55,52 @@ class DataProcessor:
             on=['importer', 'year'], how='left'
         ).rename(columns={'gdp': 'gdp_im', 'population': 'pop_im', 'internet': 'internet_im'})
         
+        # --- Real Tariff Logic (Rule-Based) ---
+        # Map HS Codes to Product Names for logic
+        hs_map = {
+            "020714": "Frozen Chicken Cuts",
+            "160100": "Sausages",
+            "160232": "Prepared Chicken",
+            "040210": "Milk Powder",
+            "190531": "Cookies/Biscuits",
+            "200599": "Vegetables",
+            "210390": "Sauces",
+            "210690": "Food Preparations"
+        }
+        
+        def get_real_tariff(row):
+            product_code = row['hs6']
+            product_name = hs_map.get(product_code, "").lower()
+            country = str(row['importer']).lower()
+            
+            # 1. Sin Tax (Pork/Alcohol) - Simulated check (assuming 160100 might be pork in some contexts, 
+            # but for Thailand export to GCC it's mostly Halal Chicken. Let's keep 100% logic available)
+            if 'pork' in product_name or 'alcohol' in product_name:
+                return 1.00 # 100%
+                
+            # 2. Saudi Arabia Exceptions
+            if 'sau' in country or 'saudi' in country:
+                if 'chicken' in product_name or '020714' in product_code or '160232' in product_code:
+                    return 0.20 # 20% for Poultry protection
+                if 'milk' in product_name or 'dairy' in product_name:
+                    return 0.10 # 10%
+                if 'date' in product_name:
+                    return 0.40 # 40%
+            
+            # 3. Basic Food Security (Rice, etc.)
+            if any(x in product_name for x in ['rice', 'wheat', 'corn']):
+                return 0.00
+                
+            # 4. Standard GCC Tariff
+            return 0.05 # 5%
+
+        # Apply the logic
+        logger.info("Applying Rule-Based Tariff Logic...")
+        df['tariff'] = df.apply(get_real_tariff, axis=1)
+        
         # Feature Engineering
-        np.random.seed(42)
-        df['tariff'] = np.random.uniform(0.01, 0.15, len(df)) # Simulated
+        np.random.seed(42) # Keep seed for other random ops if any
+        # df['tariff'] = np.random.uniform(0.01, 0.15, len(df)) # REMOVED: Old Simulation
         
         df['legal_ex'] = df['exporter'].map(self.cfg.legal_systems)
         df['legal_im'] = df['importer'].map(self.cfg.legal_systems)
