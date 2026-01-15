@@ -116,28 +116,52 @@ if df is not None:
         col3.metric("Importers", filtered_df['importer'].nunique())
         col4.metric("Products (HS6)", filtered_df['hs6'].nunique())
 
-        # Charts
+        # Charts (Static Images for Stability)
         c1, c2 = st.columns(2)
+        
+        # Robust Image Loader Helper
+        def load_image(filename):
+            paths = [
+                OUTPUT_DIR / "figures" / filename,
+                OUTPUT_DIR / filename,
+                Path("output/figures") / filename
+            ]
+            for p in paths:
+                if p.exists():
+                    return str(p)
+            return None
+
         with c1:
             st.markdown("### 📈 Time Series Trend")
-            ts_data = filtered_df.groupby('year')['trade_value'].sum().reset_index()
-            fig_ts = px.line(ts_data, x='year', y='trade_value', markers=True, title="Total Trade over Time")
-            st.plotly_chart(fig_ts, use_container_width=True)
+            img_path = load_image("trade_over_time.png")
+            if img_path:
+                st.image(img_path, caption="Total Trade over Time (2018-2022)", use_column_width=True)
+            else:
+                st.warning("Image 'trade_over_time.png' not found.")
             
         with c2:
             st.markdown("### 🏆 Top Markets")
-            bar_data = filtered_df.groupby('importer')['trade_value'].sum().reset_index().sort_values('trade_value', ascending=False)
-            fig_bar = px.bar(bar_data, x='trade_value', y='importer', orientation='h', title="Trade Value by Country")
-            st.plotly_chart(fig_bar, use_container_width=True)
+            img_path = load_image("trade_by_country.png")
+            if img_path:
+                st.image(img_path, caption="Trade Value by Country", use_column_width=True)
+            else:
+                st.warning("Image 'trade_by_country.png' not found.")
             
-        # Scatter Distance vs Trade
+        # Scatter Distance vs Trade (Keep Dynamic if safe, or remove if causing issues. Keeping dynamic for now as it uses filtered_df)
         st.markdown("### 📏 Gravity Model: Distance vs Trade")
         st.caption("Bubble size represents Importer's GDP. Larger economies should theoretically trade more.")
-        size_col = 'gdp_im' if 'gdp_im' in filtered_df.columns else None
-        fig_grav = px.scatter(filtered_df, x='distance', y='trade_value', color='importer', 
-                              size=size_col, log_x=True, log_y=True,
-                              hover_data=['year', 'hs6'], title="Distance vs Trade Value (Log-Log Scale)")
-        st.plotly_chart(fig_grav, use_container_width=True)
+        try:
+            size_col = 'gdp_im' if 'gdp_im' in filtered_df.columns else None
+            # Basic validation to avoid crashes
+            if not filtered_df.empty:
+                 fig_grav = px.scatter(filtered_df, x='distance', y='trade_value', color='importer', 
+                                       size=size_col, log_x=True, log_y=True,
+                                       hover_data=['year', 'hs6'], title="Distance vs Trade Value (Log-Log Scale)")
+                 st.plotly_chart(fig_grav, use_container_width=True)
+            else:
+                st.info("No data available for scatter plot.")
+        except Exception as e:
+            st.error(f"Could not render scatter plot: {e}")
 
     # --- TAB 2: Spatial Analysis ---
     with tab2:
