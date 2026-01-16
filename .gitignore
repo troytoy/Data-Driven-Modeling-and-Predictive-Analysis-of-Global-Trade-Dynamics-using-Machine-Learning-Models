@@ -22,3 +22,4 @@ output/*
 !output/integrated_dataset.csv
 trade_analysis_results/
 UE-Thesis-Template/
+src/wto_data_collector.py
