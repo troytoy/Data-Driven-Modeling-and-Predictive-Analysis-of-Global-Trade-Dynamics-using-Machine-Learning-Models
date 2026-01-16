@@ -23,3 +23,6 @@ output/*
 trade_analysis_results/
 UE-Thesis-Template/
 src/wto_data_collector.py
+src/wto_api_explorer.py
+docs/WTO_RESEARCH_SUMMARY.md
+src/wto_comprehensive_explorer.py
